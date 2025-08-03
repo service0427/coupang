@@ -26,7 +26,11 @@ const config = {
       ],
       firefoxUserPrefs: {
         'dom.webdriver.enabled': false,
-        'useAutomationExtension': false
+        'useAutomationExtension': false,
+        'layers.acceleration.disabled': true,  // GPU 가속 비활성화
+        'gfx.direct2d.disabled': true,         // Direct2D 비활성화 (Windows)
+        'gfx.direct3d11.enable-debug-layer': false,  // Direct3D 디버그 비활성화
+        'webgl.disabled': true                 // WebGL 비활성화
       }
     },
     webkit: {
