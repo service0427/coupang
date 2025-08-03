@@ -112,7 +112,7 @@ async function getAndLockNextKeyword(browser) {
     )
     RETURNING id, date, keyword, suffix, product_code, agent, browser, profile_name,
               proxy_server, ip_change_enabled, allow_duplicate_ip,
-              cart_click_enabled, use_persistent, clear_session,
+              cart_click_enabled, use_persistent, clear_session, gpu_disabled,
               max_executions, current_executions,
               success_count, fail_count, last_executed_at;
   `;
@@ -173,6 +173,11 @@ async function runSingleBrowser(browserType) {
     // 3. 브라우저 실행
     let launchResult;
     
+    // GPU 설정 확인
+    if (keyword.gpu_disabled) {
+      console.log(`🖥️  [${browserType}] GPU 비활성화 모드`);
+    }
+    
     if (keyword.use_persistent) {
       // 영구 프로필 모드
       // 프로필 이름에 브라우저 타입 포함
@@ -187,7 +192,8 @@ async function runSingleBrowser(browserType) {
         proxyConfig,
         profileName,
         keyword.clear_session || false,
-        false // useTracker
+        false, // useTracker
+        keyword.gpu_disabled || false // gpuDisabled
       );
     } else {
       // 일회성 세션 모드 (시크릿 모드처럼)
@@ -200,7 +206,8 @@ async function runSingleBrowser(browserType) {
         false, // usePersistent
         null,  // profileName
         false, // clearSession
-        false  // useTracker
+        false, // useTracker
+        keyword.gpu_disabled || false // gpuDisabled
       );
     }
     

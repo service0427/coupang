@@ -15,9 +15,7 @@ const config = {
       channel: 'chrome', // Windows에서는 'chrome' 또는 'msedge' 사용 가능
       args: [
         '--disable-blink-features=AutomationControlled',
-        '--no-sandbox', // Windows에서 권한 문제 해결
-        '--disable-setuid-sandbox',
-        '--disable-gpu' // GPU 가속 비활성화
+        // '--disable-gpu' // GPU 가속 비활성화
       ]
     },
     firefox: {
@@ -27,10 +25,10 @@ const config = {
       firefoxUserPrefs: {
         'dom.webdriver.enabled': false,
         'useAutomationExtension': false,
-        'layers.acceleration.disabled': true,  // GPU 가속 비활성화
-        'gfx.direct2d.disabled': true,         // Direct2D 비활성화 (Windows)
-        'gfx.direct3d11.enable-debug-layer': false,  // Direct3D 디버그 비활성화
-        'webgl.disabled': true                 // WebGL 비활성화
+        // 'layers.acceleration.disabled': true,  // GPU 가속 비활성화
+        // 'gfx.direct2d.disabled': true,         // Direct2D 비활성화 (Windows)
+        // 'gfx.direct3d11.enable-debug-layer': false,  // Direct3D 디버그 비활성화
+        // 'webgl.disabled': true                 // WebGL 비활성화
       }
     },
     webkit: {
