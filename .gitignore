@@ -3,6 +3,7 @@ node_modules/
 
 # Data directories
 data/
+browser-data/
 
 # Environment files
 .env
