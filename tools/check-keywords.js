@@ -13,15 +13,15 @@ async function checkKeywords() {
     console.log('━'.repeat(80));
     
     const allResult = await dbService.query(`
-      SELECT id, date, keyword, suffix, product_code, browser, 
-             os_type, is_vmware, proxy_server, is_active,
+      SELECT id, date, keyword, suffix, product_code, agent, browser, 
+             proxy_server, ip_change_enabled,
              current_executions, max_executions
       FROM test_keywords 
       ORDER BY id
     `);
     
-    console.log('ID | 날짜       | 키워드    | suffix | 상품코드    | 브라우저 | OS    | VM  | 프록시         | 활성 | 실행');
-    console.log('━'.repeat(80));
+    console.log('ID | 날짜       | 키워드    | suffix | 상품코드    | agent   | 브라우저 | 프록시         | IP변경 | 실행');
+    console.log('━'.repeat(100));
     
     allResult.rows.forEach(row => {
       console.log(
@@ -30,26 +30,22 @@ async function checkKeywords() {
         `${(row.keyword || '').padEnd(10)} | ` +
         `${(row.suffix || '').padEnd(6)} | ` +
         `${(row.product_code || '').padEnd(11)} | ` +
+        `${(row.agent || 'NULL').padEnd(7)} | ` +
         `${row.browser.padEnd(8)} | ` +
-        `${row.os_type.padEnd(5)} | ` +
-        `${row.is_vmware ? 'Y' : 'N'}   | ` +
         `${(row.proxy_server || 'NULL').padEnd(14)} | ` +
-        `${row.is_active ? 'Y' : 'N'}    | ` +
+        `${row.ip_change_enabled ? '✅' : '❌'}     | ` +
         `${row.current_executions}/${row.max_executions}`
       );
     });
     
     // 오늘 날짜 활성 키워드
-    console.log('\n\n📅 오늘 날짜 활성 키워드 (os: win11, vmware: false):');
+    console.log('\n\n📅 오늘 날짜 활성 키워드:');
     console.log('━'.repeat(80));
     
     const activeResult = await dbService.query(`
-      SELECT id, keyword, suffix, product_code, browser, proxy_server
+      SELECT id, keyword, suffix, product_code, agent, browser, proxy_server
       FROM test_keywords 
-      WHERE is_active = true 
-        AND os_type = 'win11'
-        AND is_vmware = false
-        AND date = CURRENT_DATE
+      WHERE date = CURRENT_DATE
         AND current_executions < max_executions
       ORDER BY id
     `);
@@ -61,12 +57,11 @@ async function checkKeywords() {
       const dateCheck = await dbService.query(`
         SELECT DISTINCT date, COUNT(*) as count
         FROM test_keywords
-        WHERE is_active = true
         GROUP BY date
         ORDER BY date DESC
       `);
       
-      console.log('\n📅 활성 키워드의 날짜 분포:');
+      console.log('\n📅 키워드의 날짜 분포:');
       dateCheck.rows.forEach(row => {
         console.log(`   ${row.date ? new Date(row.date).toISOString().split('T')[0] : 'NULL'}: ${row.count}개`);
       });
@@ -76,7 +71,7 @@ async function checkKeywords() {
       console.log(`\n⏰ DB 서버 현재 날짜: ${currentDate.rows[0].current_date}`);
       
     } else {
-      console.log('ID | 키워드     | suffix | 상품코드    | 브라우저 | 프록시');
+      console.log('ID | 키워드     | suffix | 상품코드    | agent   | 브라우저 | 프록시');
       console.log('━'.repeat(80));
       
       activeResult.rows.forEach(row => {
@@ -85,6 +80,7 @@ async function checkKeywords() {
           `${row.keyword.padEnd(10)} | ` +
           `${(row.suffix || '').padEnd(6)} | ` +
           `${row.product_code.padEnd(11)} | ` +
+          `${(row.agent || 'NULL').padEnd(7)} | ` +
           `${row.browser.padEnd(8)} | ` +
           `${row.proxy_server || 'NULL'}`
         );

@@ -18,6 +18,7 @@ async function updateKeywordsForTest() {
           current_executions = 0,
           agent = 'default'
       WHERE id IN (7, 8, 9)
+      RETURNING id, date
     `);
     
     console.log(`✅ ${result1.rowCount}개 키워드 업데이트 완료`);

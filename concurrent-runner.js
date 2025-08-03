@@ -273,6 +273,81 @@ async function runSingleBrowser(browserType) {
 }
 
 /**
+ * IP 변경이 필요한 프록시들의 IP를 변경
+ * @param {string} agent - 에이전트 이름
+ * @returns {boolean} IP 변경 여부
+ */
+async function changeProxyIPs(agent) {
+  console.log('🔍 IP 변경이 필요한 프록시 확인 중...\n');
+  
+  const ipChangeKeywords = await dbService.query(`
+    SELECT DISTINCT proxy_server
+    FROM test_keywords
+    WHERE date = CURRENT_DATE
+      AND (agent = $1 OR agent IS NULL)
+      AND proxy_server IS NOT NULL
+      AND ip_change_enabled = true
+      AND current_executions < max_executions
+  `, [agent]);
+  
+  if (ipChangeKeywords.rows.length === 0) {
+    return false;
+  }
+  
+  console.log(`📡 IP 변경이 필요한 프록시: ${ipChangeKeywords.rows.length}개\n`);
+  
+  for (const row of ipChangeKeywords.rows) {
+    const proxyServer = row.proxy_server;
+    console.log(`🔄 프록시 IP 변경 시도: ${proxyServer}`);
+    
+    const toggleResult = await proxyToggleService.toggleIp(proxyServer);
+    
+    if (toggleResult.success) {
+      console.log(`✅ ${toggleResult.message}`);
+      // IP 변경 후 안정화 대기
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // IP 확인
+      console.log('   IP 확인 중...');
+      try {
+        const { chromium } = require('playwright');
+        const browser = await chromium.launch({
+          headless: true,
+          proxy: { server: proxyServer }
+        });
+        
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        
+        await page.goto('http://techb.kr/ip.php', { 
+          waitUntil: 'domcontentloaded',
+          timeout: 15000 
+        });
+        
+        const ipInfo = await page.evaluate(() => document.body.innerText);
+        console.log(`   ✅ 새 IP 확인됨: ${ipInfo.split('\n')[0]}`);
+        
+        await browser.close();
+      } catch (error) {
+        console.log(`   ❌ IP 확인 실패: ${error.message}`);
+      }
+    } else {
+      console.log(`⚠️  IP 변경 실패: ${toggleResult.error}`);
+      if (toggleResult.remainingTime) {
+        console.log(`   → ${toggleResult.remainingTime}초 후 재시도 가능`);
+      }
+    }
+    console.log();
+  }
+  
+  console.log('✅ 프록시 IP 변경 완료\n');
+  console.log('⏳ 5초 후 계속 진행...\n');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  return true;
+}
+
+/**
  * 메인 동시 실행 함수
  */
 async function runConcurrent() {
@@ -293,70 +368,6 @@ async function runConcurrent() {
     const agent = process.env.AGENT_NAME || 'default';
     const activeCount = await keywordService.getActiveKeywordCount(agent);
     console.log(`📊 활성 키워드: ${activeCount}개\n`);
-    
-    // IP 변경이 필요한 프록시 사전 체크
-    console.log('🔍 IP 변경이 필요한 프록시 확인 중...\n');
-    const ipChangeKeywords = await dbService.query(`
-      SELECT DISTINCT proxy_server
-      FROM test_keywords
-      WHERE date = CURRENT_DATE
-        AND (agent = $1 OR agent IS NULL)
-        AND proxy_server IS NOT NULL
-        AND ip_change_enabled = true
-        AND current_executions < max_executions
-    `, [agent]);
-    
-    if (ipChangeKeywords.rows.length > 0) {
-      console.log(`📡 IP 변경이 필요한 프록시: ${ipChangeKeywords.rows.length}개\n`);
-      
-      for (const row of ipChangeKeywords.rows) {
-        const proxyServer = row.proxy_server;
-        console.log(`🔄 프록시 IP 변경 시도: ${proxyServer}`);
-        
-        const toggleResult = await proxyToggleService.toggleIp(proxyServer);
-        
-        if (toggleResult.success) {
-          console.log(`✅ ${toggleResult.message}`);
-          // IP 변경 후 안정화 대기
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          // IP 확인
-          console.log('   IP 확인 중...');
-          try {
-            const { chromium } = require('playwright');
-            const browser = await chromium.launch({
-              headless: true,
-              proxy: { server: proxyServer }
-            });
-            
-            const context = await browser.newContext();
-            const page = await context.newPage();
-            
-            await page.goto('http://techb.kr/ip.php', { 
-              waitUntil: 'domcontentloaded',
-              timeout: 15000 
-            });
-            
-            const ipInfo = await page.evaluate(() => document.body.innerText);
-            console.log(`   ✅ 새 IP 확인됨: ${ipInfo.split('\n')[0]}`);
-            
-            await browser.close();
-          } catch (error) {
-            console.log(`   ❌ IP 확인 실패: ${error.message}`);
-          }
-        } else {
-          console.log(`⚠️  IP 변경 실패: ${toggleResult.error}`);
-          if (toggleResult.remainingTime) {
-            console.log(`   → ${toggleResult.remainingTime}초 후 재시도 가능`);
-          }
-        }
-        console.log();
-      }
-      
-      console.log('✅ 프록시 사전 체크 완료\n');
-      console.log('⏳ 5초 후 실행 시작...\n');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
     
     if (activeCount === 0) {
       console.log('⚠️  실행할 키워드가 없습니다. 프로그램을 종료합니다.');
@@ -398,6 +409,9 @@ async function runConcurrent() {
       }
       
       console.log(`\n📊 남은 활성 키워드: ${currentActive}개`);
+      
+      // 매 라운드마다 IP 변경 (ip_change_enabled가 true인 프록시)
+      await changeProxyIPs(agent);
       
       // 브라우저별로 동시 실행
       const promises = browsers.map(browser => runSingleBrowser(browser));
@@ -453,4 +467,4 @@ if (require.main === module) {
   runConcurrent().catch(console.error);
 }
 
-module.exports = { runConcurrent, runSingleBrowser, getAndLockNextKeyword };
+module.exports = { runConcurrent, runSingleBrowser, getAndLockNextKeyword, changeProxyIPs };
