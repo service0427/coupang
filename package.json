@@ -17,7 +17,9 @@
     "test:keyword-exec:u22": "node tests/test-keyword-execution.js u22",
     "test:table-update": "node tests/test-table-update.js",
     "test:column-reorg": "node tests/test-column-reorganize.js",
-    "test:reorder-columns": "node tests/test-reorder-columns.js"
+    "test:reorder-columns": "node tests/test-reorder-columns.js",
+    "concurrent": "node concurrent-runner.js",
+    "check:browsers": "node tests/check-browser-data.js"
   },
   "keywords": [
     "playwright",
