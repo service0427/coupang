@@ -1,0 +1,11 @@
+{
+  "proxies": [
+    {
+      "id": "proxy1",
+      "server": "socks5://112.161.54.7:10016",
+      "name": "Korea Proxy 1",
+      "active": true
+    }
+  ],
+  "defaultMode": "sequential"
+}

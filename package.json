@@ -1,0 +1,33 @@
+{
+  "name": "coupang-product-click",
+  "version": "1.0.0",
+  "description": "쿠팡 상품 클릭 자동화 도구 (Windows 11)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js --browser chrome",
+    "test:firefox": "node index.js --browser firefox",
+    "test:webkit": "node index.js --browser webkit",
+    "api": "set MODE=api && node index.js",
+    "local": "set MODE=local && node index.js",
+    "test:db": "node tests/test-db-connection.js",
+    "test:keywords": "node tests/test-keywords-table.js",
+    "test:keyword-exec": "node tests/test-keyword-execution.js",
+    "test:keyword-exec:u24": "node tests/test-keyword-execution.js u24",
+    "test:keyword-exec:u22": "node tests/test-keyword-execution.js u22",
+    "test:table-update": "node tests/test-table-update.js",
+    "test:column-reorg": "node tests/test-column-reorganize.js"
+  },
+  "keywords": [
+    "playwright",
+    "coupang",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "pg": "^8.16.3",
+    "playwright": "^1.48.0"
+  }
+}
