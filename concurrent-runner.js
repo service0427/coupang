@@ -168,7 +168,9 @@ async function runSingleBrowser(browserType) {
     
     if (keyword.use_persistent) {
       // 영구 프로필 모드
-      console.log(`📁 [${browserType}] 프로필 모드: ${keyword.profile_name || 'default'}`);
+      // 프로필 이름에 브라우저 타입 포함
+      const profileName = keyword.profile_name ? `${browserType}_${keyword.profile_name}` : browserType;
+      console.log(`📁 [${browserType}] 프로필 모드: ${profileName}`);
       if (keyword.clear_session) {
         console.log(`🧹 [${browserType}] 세션 초기화 모드`);
       }
@@ -176,7 +178,7 @@ async function runSingleBrowser(browserType) {
       launchResult = await launchBrowserPersistent(
         browserType,
         proxyConfig,
-        keyword.profile_name || 'default',
+        profileName,
         keyword.clear_session || false,
         false // useTracker
       );
@@ -222,7 +224,8 @@ async function runSingleBrowser(browserType) {
       suffix: keyword.suffix,
       productCode: keyword.product_code,
       cartClickEnabled: keyword.cart_click_enabled,
-      maxPages: 10
+      maxPages: 10,
+      proxyConfig: proxyConfig
     });
     
     // 5. 실행 결과 기록
@@ -230,6 +233,7 @@ async function runSingleBrowser(browserType) {
     await keywordService.recordExecutionResult(keyword.id, success, executionResult.errorMessage);
     
     // 6. 실행 로그 저장
+    const searchQuery = keyword.suffix ? `${keyword.keyword} ${keyword.suffix}` : keyword.keyword;
     await keywordService.saveExecutionLog({
       keywordId: keyword.id,
       agent: keyword.agent,
@@ -244,10 +248,19 @@ async function runSingleBrowser(browserType) {
       browserUsed: browserType,
       proxyUsed: proxyConfig ? proxyConfig.server : 'direct',
       actualIp: actualIp,
-      finalUrl: executionResult.finalUrl
+      finalUrl: executionResult.finalUrl,
+      searchQuery: searchQuery
     });
     
+    // 실행 결과 로그
     console.log(`\n✅ [${browserType}] 실행 완료! (${Math.round((Date.now() - startTime) / 1000)}초)`);
+    console.log(`   검색어: "${keyword.keyword}${keyword.suffix || ''}"`);
+    if (executionResult.urlRank !== null && executionResult.urlRank !== undefined) {
+      console.log(`   URL rank: ${executionResult.urlRank}`);
+    }
+    if (executionResult.finalUrl) {
+      console.log(`   최종 URL: ${executionResult.finalUrl}`);
+    }
     
     return {
       browser: browserType,
