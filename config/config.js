@@ -16,7 +16,8 @@ const config = {
       args: [
         '--disable-blink-features=AutomationControlled',
         '--no-sandbox', // Windows에서 권한 문제 해결
-        '--disable-setuid-sandbox'
+        '--disable-setuid-sandbox',
+        '--disable-gpu' // GPU 가속 비활성화
       ]
     },
     firefox: {
