@@ -273,9 +273,10 @@ async function runSingleBrowser(browserType) {
     
     return {
       browser: browserType,
-      success: true,
+      success: executionResult.success,  // executionResult의 success 값을 사용
       keyword: keyword,
-      result: executionResult
+      result: executionResult,
+      errorMessage: executionResult.errorMessage
     };
     
   } catch (error) {
@@ -448,7 +449,8 @@ async function runConcurrent() {
         } else if (result.reason === 'no_keyword') {
           console.log(`   ${result.browser}: ⏹️  키워드 없음`);
         } else {
-          console.log(`   ${result.browser}: ❌ 실패`);
+          const errorMsg = result.errorMessage || result.error || '알 수 없는 오류';
+          console.log(`   ${result.browser}: ❌ 실패 - ${errorMsg}`);
         }
       });
       
