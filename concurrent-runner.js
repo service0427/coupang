@@ -19,7 +19,8 @@ const options = {
   screen: { width: 1200, height: 800 },
   debug: false,
   maxRounds: null,  // null = 무한, 숫자 = 최대 라운드 수
-  once: false       // true = 각 키워드를 한 번만 실행
+  once: false,      // true = 각 키워드를 한 번만 실행
+  searchMode: false // true = 검색창 직접 입력, false = URL 직접 이동
 };
 
 // 인자 처리
@@ -51,6 +52,9 @@ for (let i = 0; i < args.length; i++) {
     case '--once':
       options.once = true;
       break;
+    case '--search':
+      options.searchMode = true;
+      break;
     case '--help':
       console.log(`
 사용법: node concurrent-runner.js [옵션]
@@ -60,6 +64,7 @@ for (let i = 0; i < args.length; i++) {
   --screen <너비> <높이>   브라우저 창 크기 설정 (기본값: 1200 800)
   --max-rounds <숫자>      최대 실행 라운드 수 (기본값: 무한)
   --once                   각 키워드를 한 번만 실행하고 종료
+  --search                 검색창에 직접 입력하여 검색 (기본값: URL 직접 이동)
   --debug                  디버그 모드 활성화
   --help                   이 도움말 표시
 
@@ -69,6 +74,8 @@ for (let i = 0; i < args.length; i++) {
   node concurrent-runner.js --agent test --screen 1920 1080
   node concurrent-runner.js --max-rounds 3
   node concurrent-runner.js --once
+  node concurrent-runner.js --search
+  node concurrent-runner.js --agent vm-win11-1 --once --search
   node concurrent-runner.js --debug
 `);
       process.exit(0);
@@ -219,13 +226,16 @@ async function runSingleBrowser(browserType) {
     }
     
     // 4. 쿠팡 자동화 실행
+    const searchQuery = keyword.suffix ? `${keyword.keyword} ${keyword.suffix}` : keyword.keyword;
+    
     const executionResult = await searchAndClickProduct(page, browserType, {
       keyword: keyword.keyword,
       suffix: keyword.suffix,
       productCode: keyword.product_code,
       cartClickEnabled: keyword.cart_click_enabled,
       maxPages: 10,
-      proxyConfig: proxyConfig
+      proxyConfig: proxyConfig,
+      searchMode: options.searchMode  // 검색 모드 전달
     });
     
     // 5. 실행 결과 기록
@@ -233,7 +243,6 @@ async function runSingleBrowser(browserType) {
     await keywordService.recordExecutionResult(keyword.id, success, executionResult.errorMessage);
     
     // 6. 실행 로그 저장
-    const searchQuery = keyword.suffix ? `${keyword.keyword} ${keyword.suffix}` : keyword.keyword;
     await keywordService.saveExecutionLog({
       keywordId: keyword.id,
       agent: keyword.agent,
@@ -372,6 +381,7 @@ async function runConcurrent() {
     // 환경 정보 출력
     console.log('🏷️  현재 에이전트:', process.env.AGENT_NAME || 'default');
     console.log(`📏 화면 크기: ${options.screen.width} x ${options.screen.height}`);
+    console.log(`🔍 검색 모드: ${options.searchMode ? '검색창 직접 입력' : 'URL 직접 이동'}`);
     console.log();
     
     // DB 연결
